@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
   View, Text, TextInput, TouchableOpacity, FlatList,
-  StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform,
+  StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, Keyboard,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -29,9 +29,16 @@ export default function ChatScreen({ navigation, route }: Props) {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const listRef = useRef<FlatList>(null);
-  const { spoilerMode, maxEpisode, completedArcIds } = useSettings();
+  const { spoilerMode, maxEpisode } = useSettings();
 
-  // Fire initial question if navigated from HomeScreen
+  // Scroll to bottom whenever keyboard opens so messages stay visible
+  useEffect(() => {
+    const sub = Keyboard.addListener("keyboardDidShow", () => {
+      setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
+    });
+    return () => sub.remove();
+  }, []);
+
   useEffect(() => {
     if (route.params?.initialQuestion) {
       sendMessage(route.params.initialQuestion);
@@ -58,15 +65,16 @@ export default function ChatScreen({ navigation, route }: Props) {
         max_episode: maxEpisode,
       });
 
-      const botMsg: Message = {
-        id: (Date.now() + 1).toString(),
-        text: res.answer,
-        isUser: false,
-        sources: res.sources,
-        isSpoiler: res.spoiler_boundary_hit,
-      };
-
-      setMessages((prev) => [...prev, botMsg]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: (Date.now() + 1).toString(),
+          text: res.answer,
+          isUser: false,
+          sources: res.sources,
+          isSpoiler: res.spoiler_boundary_hit,
+        },
+      ]);
     } catch (err) {
       setMessages((prev) => [
         ...prev,
@@ -83,11 +91,12 @@ export default function ChatScreen({ navigation, route }: Props) {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    // edges={["bottom"]} — nav header already handles top, we only need bottom safe area
+    <SafeAreaView style={styles.container} edges={["bottom"]}>
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 88 : 0}
+        behavior="padding"
+        keyboardVerticalOffset={Platform.OS === "ios" ? 44 : 0}
       >
         <FlatList
           ref={listRef}
@@ -102,6 +111,9 @@ export default function ChatScreen({ navigation, route }: Props) {
             />
           )}
           contentContainerStyle={styles.list}
+          onContentSizeChange={() =>
+            listRef.current?.scrollToEnd({ animated: false })
+          }
           ListEmptyComponent={
             <View style={styles.empty}>
               <Text style={styles.emptyText}>Ask anything about Naruto</Text>
