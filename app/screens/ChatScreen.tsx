@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
   View, Text, TextInput, TouchableOpacity, FlatList,
-  StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, Keyboard,
+  StyleSheet, ActivityIndicator, Keyboard,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteProp } from "@react-navigation/native";
 import { RootStackParamList } from "../App";
@@ -28,15 +28,20 @@ export default function ChatScreen({ navigation, route }: Props) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const listRef = useRef<FlatList>(null);
   const { spoilerMode, maxEpisode } = useSettings();
+  const insets = useSafeAreaInsets();
 
-  // Scroll to bottom whenever keyboard opens so messages stay visible
   useEffect(() => {
-    const sub = Keyboard.addListener("keyboardDidShow", () => {
+    const show = Keyboard.addListener("keyboardDidShow", (e) => {
+      setKeyboardHeight(e.endCoordinates.height);
       setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
     });
-    return () => sub.remove();
+    const hide = Keyboard.addListener("keyboardDidHide", () => {
+      setKeyboardHeight(0);
+    });
+    return () => { show.remove(); hide.remove(); };
   }, []);
 
   useEffect(() => {
@@ -48,13 +53,11 @@ export default function ChatScreen({ navigation, route }: Props) {
   async function sendMessage(text: string) {
     if (!text.trim() || loading) return;
 
-    const userMsg: Message = {
+    setMessages((prev) => [...prev, {
       id: Date.now().toString(),
       text: text.trim(),
       isUser: true,
-    };
-
-    setMessages((prev) => [...prev, userMsg]);
+    }]);
     setInput("");
     setLoading(true);
 
@@ -65,95 +68,84 @@ export default function ChatScreen({ navigation, route }: Props) {
         max_episode: maxEpisode,
       });
 
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: (Date.now() + 1).toString(),
-          text: res.answer,
-          isUser: false,
-          sources: res.sources,
-          isSpoiler: res.spoiler_boundary_hit,
-        },
-      ]);
+      setMessages((prev) => [...prev, {
+        id: (Date.now() + 1).toString(),
+        text: res.answer,
+        isUser: false,
+        sources: res.sources,
+        isSpoiler: res.spoiler_boundary_hit,
+      }]);
     } catch (err) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: (Date.now() + 1).toString(),
-          text: "Couldn't reach the server. Make sure the backend is running.",
-          isUser: false,
-        },
-      ]);
+      setMessages((prev) => [...prev, {
+        id: (Date.now() + 1).toString(),
+        text: "Couldn't reach the server. Make sure the backend is running.",
+        isUser: false,
+      }]);
     } finally {
       setLoading(false);
       setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
     }
   }
 
+  const bottomPad = keyboardHeight > 0 ? keyboardHeight : insets.bottom;
+
   return (
-    <SafeAreaView style={styles.container} edges={[]}>
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 44 : 0}
-      >
-        <FlatList
-          ref={listRef}
-          data={messages}
-          keyExtractor={(m) => m.id}
-          renderItem={({ item }) => (
-            <ChatBubble
-              text={item.text}
-              isUser={item.isUser}
-              sources={item.sources}
-              isSpoiler={item.isSpoiler}
-            />
-          )}
-          contentContainerStyle={styles.list}
-          onContentSizeChange={() =>
-            listRef.current?.scrollToEnd({ animated: false })
-          }
-          ListEmptyComponent={
-            <View style={styles.empty}>
-              <Text style={styles.emptyText}>Ask anything about Naruto</Text>
-            </View>
-          }
-        />
-
-        {loading && (
-          <View style={styles.loadingRow}>
-            <ActivityIndicator size="small" color="#E8671A" />
-            <Text style={styles.loadingText}>Searching the scrolls...</Text>
-          </View>
-        )}
-
-        <View style={styles.inputRow}>
-          <TextInput
-            style={styles.input}
-            placeholder="Ask a question..."
-            placeholderTextColor="#5A6A7A"
-            value={input}
-            onChangeText={setInput}
-            onSubmitEditing={() => sendMessage(input)}
-            returnKeyType="send"
-            editable={!loading}
+    <SafeAreaView style={[styles.container, { paddingBottom: bottomPad }]} edges={["bottom"]}>
+      <FlatList
+        ref={listRef}
+        data={messages}
+        keyExtractor={(m) => m.id}
+        renderItem={({ item }) => (
+          <ChatBubble
+            text={item.text}
+            isUser={item.isUser}
+            sources={item.sources}
+            isSpoiler={item.isSpoiler}
           />
-          <TouchableOpacity
-            style={[styles.sendBtn, loading && styles.sendBtnDisabled]}
-            onPress={() => sendMessage(input)}
-            disabled={loading}
-          >
-            <Text style={styles.sendBtnText}>↑</Text>
-          </TouchableOpacity>
+        )}
+        contentContainerStyle={styles.list}
+        onContentSizeChange={() =>
+          listRef.current?.scrollToEnd({ animated: false })
+        }
+        ListEmptyComponent={
+          <View style={styles.empty}>
+            <Text style={styles.emptyText}>Ask anything about Naruto</Text>
+          </View>
+        }
+      />
+
+      {loading && (
+        <View style={styles.loadingRow}>
+          <ActivityIndicator size="small" color="#E8671A" />
+          <Text style={styles.loadingText}>Searching the scrolls...</Text>
         </View>
-      </KeyboardAvoidingView>
+      )}
+
+      <View style={styles.inputRow}>
+        <TextInput
+          style={styles.input}
+          placeholder="Ask a question..."
+          placeholderTextColor="#5A6A7A"
+          value={input}
+          onChangeText={setInput}
+          onSubmitEditing={() => sendMessage(input)}
+          returnKeyType="send"
+          editable={!loading}
+        />
+        <TouchableOpacity
+          style={[styles.sendBtn, loading && styles.sendBtnDisabled]}
+          onPress={() => sendMessage(input)}
+          disabled={loading}
+        >
+          <Text style={styles.sendBtnText}>↑</Text>
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#0D1117" },
-  flex: { flex: 1 },
   list: { paddingVertical: 12 },
   empty: {
     flex: 1,

@@ -1,7 +1,7 @@
 // Change this to your backend URL when deploying
 // For local dev: your machine's LAN IP so the phone can reach it
 // e.g. "http://192.168.1.5:8000" — find it with `ipconfig getifaddr en0`
-export const API_BASE = "http://localhost:8000";
+export const API_BASE = "http://192.168.1.4:8000";
 
 export type SpoilerMode = "safe" | "full" | "custom";
 

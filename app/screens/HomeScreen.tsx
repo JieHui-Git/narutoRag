@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import {
   View, Text, TextInput, TouchableOpacity,
-  StyleSheet, KeyboardAvoidingView, Platform, ScrollView,
+  StyleSheet, ScrollView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -22,19 +22,15 @@ export default function HomeScreen({ navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
-        <View style={styles.hero}>
-          <Text style={styles.title}>NarutoQ</Text>
-          <Text style={styles.subtitle}>Ask anything about the Naruto universe</Text>
-        </View>
+      <View style={styles.hero}>
+        <Text style={styles.title}>NarutoQ</Text>
+        <Text style={styles.subtitle}>Ask anything about the Naruto universe</Text>
+      </View>
 
-        <ScrollView
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={styles.bottom}
-        >
+      <ScrollView
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={styles.bottom}
+      >
           <View style={styles.inputRow}>
             <TextInput
               style={styles.input}
@@ -75,8 +71,7 @@ export default function HomeScreen({ navigation }: Props) {
           >
             <Text style={styles.settingsBtnText}>⚙ Spoiler Settings</Text>
           </TouchableOpacity>
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -86,9 +81,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#0D1117",
     paddingHorizontal: 20,
-  },
-  flex: {
-    flex: 1,
   },
   bottom: {
     paddingBottom: 8,
