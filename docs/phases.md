@@ -39,7 +39,7 @@ NarutoQ is being built in four phases. This document tracks what each phase cove
 
 ---
 
-## Phase 2 — Backend 🔄 In Progress
+## Phase 2 — Backend ✅ Complete
 
 **Goal:** Build a FastAPI backend that accepts questions, runs retrieval, calls Groq, and returns answers.
 
@@ -91,7 +91,7 @@ NarutoQ is being built in four phases. This document tracks what each phase cove
 
 ---
 
-## Phase 3 — Mobile App ⏳ Pending
+## Phase 3 — Mobile App ✅ Complete
 
 **Goal:** Build the React Native (Expo) mobile app with chat UI and spoiler controls.
 
@@ -124,7 +124,7 @@ NarutoQ is being built in four phases. This document tracks what each phase cove
 
 ---
 
-## Phase 4 — Polish ⏳ Pending
+## Phase 4 — Polish 🔄 In Progress
 
 **Goal:** Make the app feel production-ready before App Store / Play Store submission.
 

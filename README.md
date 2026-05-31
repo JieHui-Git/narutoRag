@@ -76,10 +76,10 @@ narutoq/
 
 ### Prerequisites
 
-- Python 3.11+
+- Python 3.11+ (tested on 3.14)
 - PostgreSQL 17 with pgvector extension
-- Node.js 18+ (for the mobile app)
-- A [Groq API key](https://console.groq.com) (free)
+- Node.js 18+
+- A [Groq API key](https://console.groq.com) (free, no credit card)
 
 ### 1. Clone and configure
 
@@ -93,37 +93,48 @@ cp .env.example .env
 ### 2. Set up the database
 
 ```bash
-# Install pgvector (macOS)
+# Install PostgreSQL 17 + pgvector (macOS)
 brew install postgresql@17 pgvector
 brew services start postgresql@17
 
-# Create database and enable pgvector
+# Create database, enable pgvector, and create chunks table
 createdb narutoq
 psql narutoq -c "CREATE EXTENSION IF NOT EXISTS vector;"
-
-# Create the chunks table
-psql narutoq -f pipeline/schema.sql
+psql narutoq -c "
+CREATE TABLE IF NOT EXISTS chunks (
+    id SERIAL PRIMARY KEY,
+    chunk_id TEXT UNIQUE NOT NULL,
+    content TEXT NOT NULL,
+    embedding vector(384),
+    metadata JSONB NOT NULL DEFAULT '{}'
+);
+CREATE INDEX IF NOT EXISTS chunks_embedding_idx ON chunks USING hnsw (embedding vector_cosine_ops);
+CREATE INDEX IF NOT EXISTS chunks_episode_idx ON chunks ((metadata->>'episode_start'));
+"
 ```
 
 ### 3. Run the data pipeline (one-time)
 
 ```bash
 cd pipeline
-python -m venv .venv && source .venv/bin/activate
+python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 
-python fetch_wiki.py        # ~20 min, fetches Narutopedia content
-python chunk.py             # ~1 min, splits into 12,000+ tagged chunks
-python embed_and_load.py    # ~10 min, embeds and loads into pgvector
+python fetch_wiki.py        # ~30 min — fetches Narutopedia content via API
+python chunk.py             # ~1 min  — splits into 12,400+ tagged chunks
+python embed_and_load.py    # ~10 min — embeds and loads into pgvector
+cd ..
 ```
 
 ### 4. Start the backend
 
 ```bash
-cd backend
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-uvicorn main:app --reload
+# From the project root (NarutoApp/)
+python3 -m venv backend/.venv && source backend/.venv/bin/activate
+pip install -r backend/requirements.txt
+
+# --host 0.0.0.0 required for phone to reach the server on LAN
+uvicorn backend.main:app --host 0.0.0.0 --port 8000
 ```
 
 ### 5. Run the mobile app
@@ -133,6 +144,10 @@ cd app
 npm install
 npx expo start
 ```
+
+Scan the QR code with [Expo Go](https://expo.dev/go) (iOS or Android). Your phone and laptop must be on the same WiFi network.
+
+> **Note:** Update `API_BASE` in `app/api.ts` to your laptop's LAN IP (e.g. `http://192.168.1.x:8000`) before running on a physical device. Find your IP with `ipconfig getifaddr en0`.
 
 ---
 
@@ -165,9 +180,9 @@ npx expo start
 | Phase | Description | Status |
 |---|---|---|
 | Phase 1 | Data pipeline (fetch → chunk → embed → load) | ✅ Complete |
-| Phase 2 | FastAPI backend + Groq integration | 🔄 In progress |
-| Phase 3 | React Native mobile app | ⏳ Pending |
-| Phase 4 | Polish (streaming, onboarding, error states) | ⏳ Pending |
+| Phase 2 | FastAPI backend + Groq integration | ✅ Complete |
+| Phase 3 | React Native mobile app | ✅ Complete |
+| Phase 4 | Polish (onboarding, spoiler UX, streaming, deploy) | 🔄 In progress |
 
 ---
 
