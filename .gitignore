@@ -1,0 +1,8 @@
+.env
+__pycache__/
+*.pyc
+pipeline/.venv/
+backend/.venv/
+pipeline/data/
+*.egg-info/
+.DS_Store
