@@ -5,4 +5,4 @@ fastembed==0.6.1
 groq==0.28.0
 psycopg[binary]>=3.3.0
 pgvector==0.3.6
-pydantic==2.11.5
+pydantic>=2.13.0
