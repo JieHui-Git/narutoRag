@@ -91,8 +91,7 @@ export default function ChatScreen({ navigation, route }: Props) {
   }
 
   return (
-    // edges={["bottom"]} — nav header already handles top, we only need bottom safe area
-    <SafeAreaView style={styles.container} edges={["bottom"]}>
+    <SafeAreaView style={styles.container} edges={[]}>
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
