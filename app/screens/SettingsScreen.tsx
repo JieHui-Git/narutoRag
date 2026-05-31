@@ -1,7 +1,8 @@
 import React from "react";
 import {
-  View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView,
+  View, Text, TouchableOpacity, ScrollView, StyleSheet,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useSettings } from "../context/SettingsContext";
 import { SpoilerMode } from "../api";
 import ArcPicker from "../components/ArcPicker";
