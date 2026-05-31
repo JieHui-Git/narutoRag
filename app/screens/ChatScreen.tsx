@@ -95,7 +95,7 @@ export default function ChatScreen({ navigation, route }: Props) {
     <SafeAreaView style={styles.container} edges={["bottom"]}>
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior="padding"
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={Platform.OS === "ios" ? 44 : 0}
       >
         <FlatList
