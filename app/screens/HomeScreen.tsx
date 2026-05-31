@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import {
   View, Text, TextInput, TouchableOpacity,
-  StyleSheet, SafeAreaView, Image,
+  StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, ScrollView,
 } from "react-native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../App";
@@ -21,51 +21,61 @@ export default function HomeScreen({ navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.hero}>
-        <Text style={styles.title}>NarutoQ</Text>
-        <Text style={styles.subtitle}>Ask anything about the Naruto universe</Text>
-      </View>
-
-      <View style={styles.inputRow}>
-        <TextInput
-          style={styles.input}
-          placeholder="How did Jiraiya die?"
-          placeholderTextColor="#5A6A7A"
-          value={question}
-          onChangeText={setQuestion}
-          onSubmitEditing={handleAsk}
-          returnKeyType="search"
-        />
-        <TouchableOpacity style={styles.askBtn} onPress={handleAsk}>
-          <Text style={styles.askBtnText}>Ask</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.hints}>
-        {[
-          "What is the Sharingan?",
-          "How strong is Might Guy?",
-          "Who are the Akatsuki members?",
-        ].map((hint) => (
-          <TouchableOpacity
-            key={hint}
-            style={styles.hintChip}
-            onPress={() => {
-              setQuestion(hint);
-              navigation.navigate("Chat", { initialQuestion: hint });
-            }}
-          >
-            <Text style={styles.hintText}>{hint}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      <TouchableOpacity
-        style={styles.settingsBtn}
-        onPress={() => navigation.navigate("Settings")}
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        <Text style={styles.settingsBtnText}>⚙ Spoiler Settings</Text>
-      </TouchableOpacity>
+        <View style={styles.hero}>
+          <Text style={styles.title}>NarutoQ</Text>
+          <Text style={styles.subtitle}>Ask anything about the Naruto universe</Text>
+        </View>
+
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={styles.bottom}
+        >
+          <View style={styles.inputRow}>
+            <TextInput
+              style={styles.input}
+              placeholder="How did Jiraiya die?"
+              placeholderTextColor="#5A6A7A"
+              value={question}
+              onChangeText={setQuestion}
+              onSubmitEditing={handleAsk}
+              returnKeyType="search"
+            />
+            <TouchableOpacity style={styles.askBtn} onPress={handleAsk}>
+              <Text style={styles.askBtnText}>Ask</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.hints}>
+            {[
+              "What is the Sharingan?",
+              "How strong is Might Guy?",
+              "Who are the Akatsuki members?",
+            ].map((hint) => (
+              <TouchableOpacity
+                key={hint}
+                style={styles.hintChip}
+                onPress={() => {
+                  setQuestion(hint);
+                  navigation.navigate("Chat", { initialQuestion: hint });
+                }}
+              >
+                <Text style={styles.hintText}>{hint}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <TouchableOpacity
+            style={styles.settingsBtn}
+            onPress={() => navigation.navigate("Settings")}
+          >
+            <Text style={styles.settingsBtnText}>⚙ Spoiler Settings</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -75,6 +85,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#0D1117",
     paddingHorizontal: 20,
+  },
+  flex: {
+    flex: 1,
+  },
+  bottom: {
+    paddingBottom: 8,
   },
   hero: {
     flex: 1,
