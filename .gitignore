@@ -6,3 +6,5 @@ backend/.venv/
 pipeline/data/
 *.egg-info/
 .DS_Store
+app/node_modules/
+app/.expo/
