@@ -46,3 +46,24 @@ def ask_groq(question: str, chunks: list[dict]) -> str:
         return response.choices[0].message.content.strip()
     except RateLimitError:
         raise HTTPException(status_code=429, detail="rate_limit")
+
+
+def stream_groq(question: str, chunks: list[dict]):
+    """Yield text tokens from Groq one at a time."""
+    prompt = build_prompt(question, chunks)
+    client = get_client()
+
+    try:
+        stream = client.chat.completions.create(
+            model=MODEL,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.3,
+            max_tokens=512,
+            stream=True,
+        )
+        for chunk in stream:
+            token = chunk.choices[0].delta.content
+            if token:
+                yield token
+    except RateLimitError:
+        raise HTTPException(status_code=429, detail="rate_limit")

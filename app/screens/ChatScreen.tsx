@@ -8,7 +8,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteProp } from "@react-navigation/native";
 import { RootStackParamList } from "../App";
 import ChatBubble from "../components/ChatBubble";
-import { askQuestion, QueryError } from "../api";
+import { askQuestionStream, QueryError, StreamMetadata } from "../api";
 import { useSettings } from "../context/SettingsContext";
 
 type Props = {
@@ -63,20 +63,41 @@ export default function ChatScreen({ navigation, route }: Props) {
     setInput("");
     setLoading(true);
 
-    try {
-      const res = await askQuestion({
-        question: text.trim(),
-        spoiler_mode: spoilerMode,
-        max_episode: maxEpisode,
-      });
+    const botId = (Date.now() + 1).toString();
 
-      setMessages((prev) => [...prev, {
-        id: (Date.now() + 1).toString(),
-        text: res.answer,
-        isUser: false,
-        sources: res.sources,
-        isSpoiler: res.spoiler_boundary_hit,
-      }]);
+    // Add an empty bot message immediately — we'll fill it token by token
+    setMessages((prev) => [...prev, {
+      id: botId,
+      text: "",
+      isUser: false,
+    }]);
+
+    try {
+      await askQuestionStream(
+        { question: text.trim(), spoiler_mode: spoilerMode, max_episode: maxEpisode },
+
+        // Called once with metadata (sources, spoiler_boundary_hit)
+        (meta: StreamMetadata) => {
+          setMessages((prev) => prev.map((m) =>
+            m.id === botId
+              ? { ...m, sources: meta.sources, isSpoiler: meta.spoiler_boundary_hit,
+                  text: meta.spoiler_boundary_hit
+                    ? "That happens after where you are in the series. Update your spoiler settings to get an answer. 🍃"
+                    : meta.no_answer
+                    ? "I don't have enough information about that in my database."
+                    : "" }
+              : m
+          ));
+        },
+
+        // Called for each token — append to the message text
+        (token: string) => {
+          setMessages((prev) => prev.map((m) =>
+            m.id === botId ? { ...m, text: m.text + token } : m
+          ));
+          listRef.current?.scrollToEnd({ animated: false });
+        },
+      );
     } catch (err) {
       const errorText = err instanceof QueryError && err.type === "rate_limit"
         ? "Too many requests — try again in a moment."
@@ -84,13 +105,11 @@ export default function ChatScreen({ navigation, route }: Props) {
         ? "Can't reach the server. Check your WiFi or make sure the backend is running."
         : "Something went wrong. Please try again.";
 
-      setMessages((prev) => [...prev, {
-        id: (Date.now() + 1).toString(),
-        text: errorText,
-        isUser: false,
-        isError: true,
-        originalQuestion: text.trim(),
-      }]);
+      setMessages((prev) => prev.map((m) =>
+        m.id === botId
+          ? { ...m, text: errorText, isError: true, originalQuestion: text.trim() }
+          : m
+      ));
     } finally {
       setLoading(false);
       setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
