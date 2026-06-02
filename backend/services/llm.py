@@ -1,5 +1,6 @@
 import os
-from groq import Groq
+from groq import Groq, RateLimitError
+from fastapi import HTTPException
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -35,11 +36,13 @@ def ask_groq(question: str, chunks: list[dict]) -> str:
     prompt = build_prompt(question, chunks)
     client = get_client()
 
-    response = client.chat.completions.create(
-        model=MODEL,
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.3,   # lower = more factual, less creative
-        max_tokens=512,
-    )
-
-    return response.choices[0].message.content.strip()
+    try:
+        response = client.chat.completions.create(
+            model=MODEL,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.3,
+            max_tokens=512,
+        )
+        return response.choices[0].message.content.strip()
+    except RateLimitError:
+        raise HTTPException(status_code=429, detail="rate_limit")

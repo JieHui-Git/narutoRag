@@ -8,7 +8,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteProp } from "@react-navigation/native";
 import { RootStackParamList } from "../App";
 import ChatBubble from "../components/ChatBubble";
-import { askQuestion } from "../api";
+import { askQuestion, QueryError } from "../api";
 import { useSettings } from "../context/SettingsContext";
 
 type Props = {
@@ -22,6 +22,8 @@ interface Message {
   isUser: boolean;
   sources?: string[];
   isSpoiler?: boolean;
+  isError?: boolean;
+  originalQuestion?: string;
 }
 
 export default function ChatScreen({ navigation, route }: Props) {
@@ -76,10 +78,18 @@ export default function ChatScreen({ navigation, route }: Props) {
         isSpoiler: res.spoiler_boundary_hit,
       }]);
     } catch (err) {
+      const errorText = err instanceof QueryError && err.type === "rate_limit"
+        ? "Too many requests — try again in a moment."
+        : err instanceof QueryError && err.type === "network"
+        ? "Can't reach the server. Check your WiFi or make sure the backend is running."
+        : "Something went wrong. Please try again.";
+
       setMessages((prev) => [...prev, {
         id: (Date.now() + 1).toString(),
-        text: "Couldn't reach the server. Make sure the backend is running.",
+        text: errorText,
         isUser: false,
+        isError: true,
+        originalQuestion: text.trim(),
       }]);
     } finally {
       setLoading(false);
@@ -101,6 +111,13 @@ export default function ChatScreen({ navigation, route }: Props) {
             isUser={item.isUser}
             sources={item.sources}
             isSpoiler={item.isSpoiler}
+            isError={item.isError}
+            onRetry={item.originalQuestion
+              ? () => {
+                  setMessages((prev) => prev.filter((m) => m.id !== item.id));
+                  sendMessage(item.originalQuestion!);
+                }
+              : undefined}
           />
         )}
         contentContainerStyle={styles.list}

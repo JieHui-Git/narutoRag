@@ -1,14 +1,32 @@
 import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 
 interface Props {
   text: string;
   isUser: boolean;
   sources?: string[];
   isSpoiler?: boolean;
+  isError?: boolean;
+  onRetry?: () => void;
 }
 
-export default function ChatBubble({ text, isUser, sources, isSpoiler }: Props) {
+export default function ChatBubble({ text, isUser, sources, isSpoiler, isError, onRetry }: Props) {
+  if (isError) {
+    return (
+      <View style={styles.errorRow}>
+        <View style={styles.errorBubble}>
+          <Text style={styles.errorIcon}>⚠</Text>
+          <Text style={styles.errorText}>{text}</Text>
+          {onRetry && (
+            <TouchableOpacity style={styles.retryBtn} onPress={onRetry}>
+              <Text style={styles.retryText}>Try again</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+    );
+  }
+
   if (isSpoiler) {
     return (
       <View style={styles.spoilerRow}>
@@ -69,6 +87,37 @@ const styles = StyleSheet.create({
     color: "#6B7A99",
     fontStyle: "italic",
   },
+
+  // Error styles
+  errorRow: {
+    marginVertical: 4,
+    paddingHorizontal: 12,
+    alignItems: "flex-start",
+  },
+  errorBubble: {
+    maxWidth: "82%",
+    backgroundColor: "#1A1010",
+    borderRadius: 16,
+    borderBottomLeftRadius: 4,
+    borderWidth: 1,
+    borderColor: "#6B2020",
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 6,
+  },
+  errorIcon: { fontSize: 16 },
+  errorText: { fontSize: 14, color: "#C47A7A", lineHeight: 20 },
+  retryBtn: {
+    marginTop: 4,
+    alignSelf: "flex-start",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: "#2A1515",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#6B2020",
+  },
+  retryText: { color: "#E88080", fontSize: 13, fontWeight: "600" },
 
   // Spoiler boundary styles
   spoilerRow: {

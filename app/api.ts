@@ -17,16 +17,29 @@ export interface QueryResponse {
   spoiler_boundary_hit: boolean;
 }
 
-export async function askQuestion(req: QueryRequest): Promise<QueryResponse> {
-  const res = await fetch(`${API_BASE}/query`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(req),
-  });
+export type AppError = "network" | "rate_limit" | "server";
 
-  if (!res.ok) {
-    throw new Error(`Server error: ${res.status}`);
+export class QueryError extends Error {
+  constructor(public type: AppError) {
+    super(type);
   }
+}
+
+export async function askQuestion(req: QueryRequest): Promise<QueryResponse> {
+  let res: Response;
+
+  try {
+    res = await fetch(`${API_BASE}/query`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(req),
+    });
+  } catch {
+    throw new QueryError("network");
+  }
+
+  if (res.status === 429) throw new QueryError("rate_limit");
+  if (!res.ok) throw new QueryError("server");
 
   return res.json();
 }
